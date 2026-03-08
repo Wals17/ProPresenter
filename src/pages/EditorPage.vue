@@ -107,18 +107,46 @@
       </q-fab>
     </q-page-sticky>
     <q-page-sticky position="bottom-left" :offset="[18, 18]">
-      <q-btn
-        fab
-        icon="mdi-duck"
-        label="Generate Presentation"
-        @click="buildDocumentFromOutline"
+      <q-btn-dropdown
+        split
         color="green-7"
+        icon="mdi-duck"
+        label="Save as .pro"
         :disable="outline.template === null"
+        @click="buildDocumentFromOutline('pro')"
       >
         <q-tooltip v-if="outline.template === null">
-          You must first select a ProPresenter template"
+          You must first select a ProPresenter template
         </q-tooltip>
-      </q-btn>
+        <q-list>
+          <q-item
+            clickable
+            v-close-popup
+            @click="buildDocumentFromOutline('pro')"
+          >
+            <q-item-section avatar>
+              <q-icon name="mdi-file" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Save as .pro</q-item-label>
+              <q-item-label caption>Single presentation file</q-item-label>
+            </q-item-section>
+          </q-item>
+          <q-item
+            clickable
+            v-close-popup
+            @click="buildDocumentFromOutline('proBundle')"
+          >
+            <q-item-section avatar>
+              <q-icon name="mdi-folder-zip" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Save as .proBundle</q-item-label>
+              <q-item-label caption>Presentation bundle (includes media)</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-btn-dropdown>
     </q-page-sticky>
   </q-page>
 </template>
@@ -205,10 +233,11 @@ async function openTemplate() {
   app.supportedWidgets = await getSupportedWidgets(outline.template);
 }
 
-async function buildDocumentFromOutline() {
+async function buildDocumentFromOutline(format = "pro") {
   // If no template is set for the outline, prompt to select a template
   if (!outline.template) {
     const template = await window.fileApi.openTemplate();
+    if (!template) return;
     outline.template = template.data;
     outline.templatePath = template.path;
   }
@@ -275,9 +304,13 @@ async function buildDocumentFromOutline() {
     },
   ];
 
-  console.log("Final", presentation);
   const buffer = await generateFile(presentation);
-  window.fileApi.saveFile(buffer, `${outline.name}`);
+
+  if (format === "proBundle") {
+    await window.fileApi.saveBundle(buffer, `${outline.name}`);
+  } else {
+    await window.fileApi.saveFile(buffer, `${outline.name}`);
+  }
 }
 </script>
 

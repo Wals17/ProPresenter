@@ -91,7 +91,7 @@ contextBridge.exposeInMainWorld("fileApi", {
   },
 
   async saveFile(data, defaultPath = null) {
-    const path = await dialog.showSaveDialog({
+    const savePath = await dialog.showSaveDialog({
       title: "Save Presentation",
       defaultPath,
       filters: [
@@ -102,11 +102,43 @@ contextBridge.exposeInMainWorld("fileApi", {
       ],
     });
 
-    if (path.canceled) {
+    if (savePath.canceled) {
       return;
     }
 
-    fs.writeFileSync(path.filePath, data);
+    fs.writeFileSync(savePath.filePath, data);
+    return savePath.filePath;
+  },
+
+  async saveBundle(data, defaultPath = null) {
+    const savePath = await dialog.showSaveDialog({
+      title: "Save Presentation Bundle",
+      defaultPath,
+      filters: [
+        {
+          name: "ProPresenter7 Presentation Bundle",
+          extensions: ["proBundle"],
+        },
+      ],
+    });
+
+    if (savePath.canceled) {
+      return;
+    }
+
+    const bundlePath = savePath.filePath;
+
+    // A .proBundle is a macOS-style directory bundle.
+    // Create the directory if it doesn't already exist.
+    if (!fs.existsSync(bundlePath)) {
+      fs.mkdirSync(bundlePath, { recursive: true });
+    }
+
+    // The .pro file inside the bundle uses the same base name.
+    const baseName = path.basename(bundlePath, ".proBundle");
+    fs.writeFileSync(path.join(bundlePath, `${baseName}.pro`), data);
+
+    return bundlePath;
   },
 
   async saveOutline(data, defaultPath = null) {
